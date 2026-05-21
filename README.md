@@ -1,0 +1,3 @@
+The Employee Payroll Management System is a web-based application developed using ASP.NET MVC and Kendo UI for managing employee payroll operations. It includes secure employee registration and login with password validation, attendance management, and automated salary calculation.
+
+The system allows admins to calculate salaries using Basic Salary, DA, HRA, PF, and Tax components, while preventing duplicate salary entries. Employees can view monthly salary details, and admins can manage salary records and generate reports. The application also provides responsive design and secure session management.
