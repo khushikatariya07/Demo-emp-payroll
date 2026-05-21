@@ -1,0 +1,198 @@
+@{
+    ViewData["Title"] = "Home Page";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+
+<div id="grid"></div>
+
+<!-- Calculate Salary Window -->
+<div id="salaryWindow" style="display:none;">
+    <form>
+        <input type="hidden" id="empIdCalc" />
+
+        <p><b id="empNameCalc"></b></p>
+        <p>Base Salary: <b id="empSalaryCalc"></b></p>
+
+        <label>Select Month & Year</label>
+        <input id="monthPicker" style="width:100%;" />
+
+        <br/><br/>
+        <button type="button" id="btnCalculate" class="k-button k-primary">Calculate</button>
+    </form>
+</div>
+
+<!-- Edit Salary Window -->
+<div id="editWindow" style="display:none;">
+    <form>
+        <input type="hidden" id="empIdEdit" />
+
+        <p><b id="empNameEdit"></b></p>
+
+        <label>Salary</label>
+        <input type="number" step="0.01" id="empSalaryEdit" />
+
+        <br/><br/>
+        <button type="button" id="btnEdit" class="k-button k-primary">Update</button>
+    </form>
+</div>
+
+<div id="notification"></div>
+
+@section Scripts{
+<script>
+$(document).ready(function () {
+
+    var notification = $("#notification").kendoNotification().data("kendoNotification");
+
+    // ✅ Windows
+    var salaryWindow = $("#salaryWindow").kendoWindow({
+        width: "400px",
+        title: "Calculate Salary",
+        visible: false,
+        modal: true
+    }).data("kendoWindow");
+
+    var editWindow = $("#editWindow").kendoWindow({
+        width: "400px",
+        title: "Edit Salary",
+        visible: false,
+        modal: true
+    }).data("kendoWindow");
+
+    // ✅ Date Picker
+    $("#monthPicker").kendoDatePicker({
+        start: "year",
+        depth: "year",
+        format: "MMMM yyyy"
+    });
+
+    // ✅ Grid
+    $("#grid").kendoGrid({
+        dataSource: {
+            transport: {
+                read: {
+                    url: "/Admin/GetAllEmp",
+                    dataType: "json"
+                }
+            },
+            schema: {
+                data: "res"
+            },
+            pageSize: 5
+        },
+        pageable: true,
+        sortable: true,
+        filterable: true,
+        columns: [
+            { field: "name", title: "Name" },
+            { field: "gender", title: "Gender" },
+            { field: "mobile", title: "Mobile" },
+            { field: "salary", title: "Salary" },
+            {
+                title: "Actions",
+                template: `
+                    <button class="k-button k-primary" onclick="openSalaryWindow(#=empId#)">Calculate</button>
+                    <button class="k-button k-warning" onclick="openEditSalary(#=empId#)">Edit</button>
+                    <button class="k-button k-danger" onclick="deleteUser(#=empId#)">Delete</button>
+                `
+            }
+        ]
+    });
+
+    // ✅ Calculate Salary
+    $("#btnCalculate").click(function () {
+
+        var picker = $("#monthPicker").data("kendoDatePicker");
+        var date = picker.value();
+
+        if (!date) {
+            notification.show("Select month & year", "error");
+            return;
+        }
+
+        var data = {
+            EmpId: $("#empIdCalc").val(),
+            Month: date.getMonth() + 1,
+            Year: date.getFullYear()
+        };
+
+        $.post("/Admin/SalaryCom", data, function (res) {
+
+            if (res.success) {
+                notification.show("Salary calculated", "success");
+            } else if (res.res === -1) {
+                notification.show("Already exists", "error");
+            } else {
+                notification.show("Error", "error");
+            }
+
+            salaryWindow.close();
+            $("#grid").data("kendoGrid").dataSource.read();
+        });
+    });
+
+    // ✅ Edit Salary
+    $("#btnEdit").click(function () {
+
+        var data = {
+            EmpId: $("#empIdEdit").val(),
+            Salary: $("#empSalaryEdit").val()
+        };
+
+        $.post("/Admin/SetSalary", data, function (res) {
+
+            if (res.success) {
+                notification.show("Salary updated", "success");
+            } else {
+                notification.show("Error", "error");
+            }
+
+            editWindow.close();
+            $("#grid").data("kendoGrid").dataSource.read();
+        });
+    });
+
+});
+
+
+// ✅ Open Calculate Window
+function openSalaryWindow(id) {
+
+    $.get("/Admin/GetEmp", { id: id }, function (res) {
+
+        $("#empIdCalc").val(res.res.empId);
+        $("#empNameCalc").text(res.res.name);
+        $("#empSalaryCalc").text(res.res.salary);
+
+        $("#salaryWindow").data("kendoWindow").center().open();
+    });
+}
+
+
+// ✅ Open Edit Window
+function openEditSalary(id) {
+
+    $.get("/Admin/GetEmp", { id: id }, function (res) {
+
+        $("#empIdEdit").val(res.res.empId);
+        $("#empNameEdit").text(res.res.name);
+        $("#empSalaryEdit").val(res.res.salary);
+
+        $("#editWindow").data("kendoWindow").center().open();
+    });
+}
+
+
+
+// ✅ Delete
+function deleteUser(id) {
+
+    if (!confirm("Delete?")) return;
+
+    $.post("/Admin/DeleteEmp", { id: id }, function () {
+        $("#grid").data("kendoGrid").dataSource.read();
+    });
+}
+</script>
+}

@@ -1,0 +1,157 @@
+ @{
+    ViewData["Title"] = "Register";
+
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div  class= "card shadow-lg">
+                <div class="card-header bg-primary text-center text-white">
+                    @ViewData["title"]
+                </div>
+                <div class="card-body">
+                   
+                    <form id="resForm"  ></form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="notification"></div>
+
+
+@section Scripts{
+<script>
+
+    var notification = $("#notification").kendoNotification({
+    position: {
+        pinned: true,
+        bottom: 30,
+        right: 30
+    },
+    autoHideAfter: 3000,
+    stacking: "down",
+    templates: [
+        {
+            type: "success",
+            template: "<div class='k-notification-success'>#= message #</div>"
+        },
+        {
+            type: "error",
+            template: "<div class='k-notification-error'>#= message #</div>"
+        }
+    ]
+}).data("kendoNotification");
+
+
+
+
+    var form = $("#resForm").kendoForm({
+        validatable: {
+            validateOnBlur: true
+        },
+        items: [
+            {
+                field: "Name",
+                label: "Name:",
+                validation: { required: true }
+            },
+            {
+                field: "Email",
+                label: "Email:",
+                validation: { required: true, email: true }
+            },
+           {
+            field: "Gender",
+            label: "Gender",
+            validation: {
+                required: true
+            },
+            editor: function(container, options) {
+
+                $('<input type="radio" name="' + options.field + '" value="Male" required   > Male<br>')
+                    .appendTo(container);
+
+                $('<input type="radio" name="' + options.field + '" value="Female" required> Female<br>')
+                    .appendTo(container);
+
+              
+
+                $('<span class="k-invalid-msg" data-for="' + options.field + '"></span>')
+                    .appendTo(container);
+            }
+        },
+            {
+                field: "Mobile",
+                label: "Mobile:",
+                validation: { required: true }
+            },
+            {
+                field: "Password",
+                label: "Password:",
+                 validation: {
+                    required: true,
+                    pattern:"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@@$!%*?&])[A-Za-z\\d@@$!%*?&]{8,}$"
+                },
+                editor: function(container,options) {
+                    $('<input type="password" class="w-100" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@@$!%*?&])[A-Za-z\\d@@$!%*?&]{8,}$" data-pattern-msg="Password must be 8+ chars with Upper, Lower, Number, and Special char."   required name="' + options.field + '"/>').appendTo(container);
+
+                     $('<span class="k-invalid-msg" data-for="' + options.field + '"></span>')
+                    .appendTo(container);
+                }
+            },
+            {
+                field: "ConfirmPassword",
+                label: "Confirm Password:",
+                editor: function(container,options) {
+                    $('<input type="password" class="w-100" required name="' + options.field + '"/>').appendTo(container);
+
+                     $('<span class="k-invalid-msg" data-for="' + options.field + '"></span>')
+                    .appendTo(container);
+                }
+            },
+            
+        ],
+        submit: function (e) {
+            e.preventDefault();
+
+            var validator = $("#resForm").data("kendoValidator");
+
+            if (!validator.validate()) {
+                return; // stop if invalid
+            }
+
+            var formData = new FormData();
+
+            // append fields
+            formData.append("Name", e.model.Name);
+            formData.append("Email", e.model.Email);
+            formData.append("Gender", e.model.Gender);
+            formData.append("Mobile", e.model.Mobile);
+            formData.append("Password", e.model.Password);
+            formData.append("ConfirmPassword", e.model.ConfirmPassword);
+
+            // file
+           
+
+            $.ajax({
+                url: "/Home/Register",
+                type: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (res) {
+                    if (res.success) {
+                        notification.show({ message: res.message }, "success");
+                        window.location.href = "/home/Login"
+                    } else {
+                        notification.show({ message: res.message }, "error");
+                    }
+                }
+            });
+        }
+    }).data("kendoForm");
+</script>
+}

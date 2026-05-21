@@ -1,0 +1,324 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div >
+    <h3 class="display-4">Employee </h3>
+   
+</div>
+
+<hr/>
+
+
+<div id="grid"></div>
+<div id="detailsWindow" style="display:none;"></div>
+
+<div id="notification"></div>
+
+<div id="monthPickerWindow" style="display:none;">
+    <div id="monthPickerContent"></div>
+</div>
+
+
+@section Scripts{
+   <script>
+
+    var selectedId = 0;
+    $(document).ready(function () {
+
+      
+        initMonthPickerWindow();
+        loadGrid(); 
+
+    });
+
+      var notification = $("#notification").kendoNotification({
+    position: {
+        pinned: true,
+        top: 30,
+        right: 30
+    },
+    autoHideAfter: 3000,
+    stacking: "down",
+    templates: [
+        {
+            type: "success",
+            template: "<div class='k-notification-success'>#= message #</div>"
+        },
+        {
+            type: "error",
+            template: "<div class='k-notification-error'>#= message #</div>"
+        }
+    ]
+}).data("kendoNotification");
+
+function loadGrid() {
+
+    $.ajax({
+        url: "/Admin/GetAllEmp",
+        type: "GET",
+        success: function (response) {
+
+            $("#grid").kendoGrid({
+
+                dataSource: {
+                    data: response.res,
+                    pageSize: 5
+                },
+
+                height: 500,
+                pageable: true,
+                sortable: true,
+                filterable: true,
+
+            @* toolbar: ["create", "save", "cancel", "excel", "pdf", "search"], *@
+                @* toolbar: [
+                    { template: '<button class="k-button btn-primary " onclick="openAddPopup()">+ </button>' }
+                ], *@
+
+                columns: [
+                    { field: "name", title: "Name" },
+                    { field: "gender", title: "Gender" },
+                    { field: "mobile", title: "Mobile" },
+                    { field: "salary", title: "Salary" },
+                    
+                    {
+                        template: `
+                            @* <button class="k-button btn-info"  onclick="showDetails(#=empId#)">Details</button> *@
+                            <button class="k-button btn-primary" onclick="AddBasicSalary(#=empId#)">Update salary</button>
+                            <button class="k-button btn-primary" onclick="calculateSalary(#=empId#)">calculate Salary</button>
+                            <button class="k-button btn-danger" onclick="deleteUser(#=empId#)">Delete</button>
+                        `,
+                        title: "Actions",
+                        width: "450px"
+                    }
+                ]
+            });
+
+        }
+    });
+}
+
+
+function addSalaryBtn() {
+
+    var picker = $("#MonthPicker").data("kendoDatePicker");
+    var selectedDate = picker.value();
+
+    if (!selectedDate) {
+        notification.show({ message: "Please select month and year." }, "error");
+        return;
+    }
+
+    var month = selectedDate.getMonth() + 1;
+    var year = selectedDate.getFullYear();
+
+    var formData = new FormData();
+    formData.append("EmpId", selectedId);
+    formData.append("Month", month);
+    formData.append("Year", year);
+
+    $.ajax({
+        url: "/Admin/SalaryCom",
+        type: "POST",
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (res) {
+
+            if (res.success) {
+                notification.show({ message: "Salary calculated successfully" }, "success");
+            } 
+            else if (res.res == -1) {
+                notification.show({ message: "Salary already exists!" }, "error");
+            }
+            else {
+                notification.show({ message: "Error calculating salary" }, "error");
+            }
+
+            $("#monthPickerWindow").data("kendoWindow").close();
+
+            $("#grid").data("kendoGrid").destroy();
+            loadGrid();
+        }
+    });
+}
+
+
+function calculateSalary(id) { 
+   
+    $.ajax({
+        url: "/Admin/GetEmp",
+        type: "GET",
+        data: {  id }, 
+        success: function (res) {
+           openMonthPickerWindow(res )  
+        }
+    });
+}
+@*  *@
+
+function openMonthPickerWindow(user){
+    var wnd = $("#monthPickerWindow").data("kendoWindow");
+    selectedId = user.res.empId
+    var html = `
+        <div style="padding:10px" class="card">
+                   
+                    <input id="empid" type="hidden" value="${user.res.empId}" />
+                    <span>Employee:</span>
+                    <span><b>${user.res.name}</b>  <span/><br/>
+                    <br/>
+                    <span>Base Salary:</span>
+                    <span><b>${user.res.salary}</b>  <span/><br/>
+                    <br/>
+                     </div>
+
+                    <div class="report-filter-wrap">
+                        <label for="MonthPicker"><strong>Select Month and Year</strong></label>
+                        <input id="MonthPicker" style="width:100%;" />
+                        <div class="report-filter-actions">
+                            
+                            <button onclick="addSalaryBtn()" class="k-button k-button-md k-button-solid-primary">add</button>
+                        </div>
+                    </div>
+                `;
+
+                $("#monthPickerContent").html(html);
+                $("#MonthPicker").kendoDatePicker({
+                    start: "year",
+                    depth: "year",
+                    format: "MMMM yyyy",
+                    value: new Date()
+                });
+                
+
+                 wnd.center().open();
+
+
+  
+
+}
+
+
+@*  *@
+
+function initMonthPickerWindow(){
+    $("#monthPickerWindow").kendoWindow({
+        width: "420px",
+        title: "set Month and year",
+        visible: false,
+        modal: true,
+        resizable: false,
+        actions: ["Close"]
+    });
+}
+
+
+@*  *@
+
+
+
+
+
+
+
+
+function AddBasicSalary(id) {
+        console.log(id)
+    $.ajax({
+        url: "/Admin/GetEmp",
+        type: "GET",
+        data: {  id }, 
+        success: function (rep) {
+
+            var user = rep;
+            console.log(user);
+
+            var content = `
+                <div style="padding:10px" class="card">
+                   
+                    <input id="empid" type="hidden" value="${user.res.empId}" />
+                    <span>Employee:</span>
+                    <span><b>${user.res.name}</b>  <span/><br/>
+                    <br/>
+                    <input id="salary" type="decimal" value="${user.res.salary}" /></br></br></br>
+                   
+                    <button class="k-button k-primary" onclick="SetSalary(${id})">Set</button>
+                </div>
+            `;
+
+            openWindow("Add Basic Salary", content);
+        }
+    });
+}
+@*  *@
+
+function SetSalary(id) {
+
+    var formData = new FormData();
+
+    formData.append("empId",id);
+   
+    formData.append("salary", $("#salary").val());
+
+    $.ajax({
+        url: "/Admin/SetSalary",
+        type: "POST",
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (user) {
+            console.log(user.success)
+            if (user.success) {
+                        notification.show({ message: user.message }, "success");
+                        window.location.href = "/Admin/Index"
+            } else {
+                notification.show({ message: user.message }, "error");
+            }
+            
+             $("#grid").data("kendoGrid").destroy();
+            loadGrid();
+        }
+    });
+}
+
+@*  *@
+
+function deleteUser(id) {
+
+    if (!confirm("Are you    sure?")) return;
+
+    $.ajax({
+        url: "/Admin/DeleteEmp",
+        type: "POST",
+        data: { id },
+        success: function () {
+            alert("Deleted");
+            $("#grid").data("kendoGrid").destroy();
+            loadGrid();
+        }
+    });
+}
+
+@*  *@
+
+
+function openWindow(title, content) {
+
+    var win = $("<div />").kendoWindow({
+        title: title,
+        modal: true,
+        width: "400px",
+        close: function () {
+            this.destroy();
+        }
+    }).data("kendoWindow");
+
+    win.content(content);
+    win.center().open();
+}
+
+  </script>
+}
+

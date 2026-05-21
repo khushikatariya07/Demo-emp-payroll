@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Home Page";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<div id="grid"></div>
+
+@section Scripts{
+<script>
+    $("#grid").kendoGrid({
+        dataSource: {
+            transport: {
+                read: {
+                    url: "/Admin/GetSalCompo",
+                    dataType: "json"
+                }
+            },
+            schema: {
+                data: "res",
+                model: {
+                    id: "id",
+                    fields: {
+                        id: { editable: false, nullable: true },
+                        name: { type: "string" },
+                        type: { type: "string" },
+                        per: { type: "number" }
+                    }
+                }
+            },
+            pageSize: 5
+        },
+
+        toolbar: ["create"],
+        pageable: true,
+        sortable: true,
+        filterable: true,
+
+        editable: "inline",
+
+        columns: [
+            { field: "id", title: "Id", width: "80px" },
+            { field: "name", title: "Name" },
+            { field: "type", title: "Type" },
+            { field: "per", title: "Percentage" },
+
+            {
+                title: "Actions",
+                command: [
+                    "edit",
+                    "destroy"
+                ],
+                width: "200px"
+            }
+        ]
+    });
+</script>
+}

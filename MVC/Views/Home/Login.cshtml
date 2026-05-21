@@ -1,0 +1,111 @@
+ @{
+    ViewData["Title"] = "Login";
+
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div  class= "card shadow-lg">
+                <div class="card-header bg-primary text-center text-white">
+                    @ViewData["title"]
+                </div>
+                <div class="card-body">
+                   
+                    <form id="loginForm"  ></form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="notification"></div>
+
+
+@section Scripts{
+<script>
+
+     var notification = $("#notification").kendoNotification({
+    position: {
+        pinned: true,
+        bottom: 30,
+        right: 30
+    },
+    autoHideAfter: 3000,
+    stacking: "down",
+    templates: [
+        {
+            type: "success",
+            template: "<div class='k-notification-success'>#= message #</div>"
+        },
+        {
+            type: "error",
+            template: "<div class='k-notification-error'>#= message #</div>"
+        }
+    ]
+}).data("kendoNotification");
+
+
+
+
+    var form = $("#loginForm").kendoForm({
+        validatable: {
+            validateOnBlur: true
+        },
+        items: [
+            
+            {
+                field: "Email",
+                label: "Email:",
+                validation: { required: true, email: true }
+            },
+          
+           
+            {
+                field: "Password",
+                label: "Password:",
+                 validation: {
+                    required: true,
+                },
+                editor: function(container,options) {
+                    $('<input type="password" class="w-100" required name="' + options.field + '"/>').appendTo(container);
+
+                     $('<span class="k-invalid-msg" data-for="' + options.field + '"></span>')
+                    .appendTo(container);
+                }
+            },
+           
+            
+        ],
+        submit: function (e) {
+            e.preventDefault();
+
+            var validator = $("#loginForm").data("kendoValidator");
+
+            if (!validator.validate()) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append("Email", e.model.Email);
+            formData.append("Password", e.model.Password);
+
+            $.ajax({
+                url: "/Home/Login",
+                type: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (res) {
+                    if (res.success) {
+                        notification.show({ message: res.message }, "success");
+                        window.location.href = "/Emp/Index"
+                    } else {
+                        notification.show({ message: res.message }, "error");
+                    }
+                }
+            });
+        }
+    }).data("kendoForm");
+</script>
+}
